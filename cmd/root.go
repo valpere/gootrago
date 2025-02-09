@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,21 +23,37 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+// Global variables to store command-line flags and configuration
+var (
+	cfgFile     string // Path to configuration file
+	inputFile   string // Path to input file for translation
+	outputFile  string // Path where translated text will be saved
+	sourceLang  string // Source language code (e.g., 'en' for English)
+	targetLang  string // Target language code (e.g., 'es' for Spanish)
+	projectID   string // Google Cloud Project ID (required for Advanced API)
+	credentials string // Path to Google Cloud credentials JSON file
+	useAdvanced bool   // Flag to switch between Basic and Advanced APIs
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gootrago",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "CLI Google Translator written on Golang",
+	Long: `A CLI application that translates text files using Google Translate API.
+It supports both Basic and Advanced Google Translate APIs and various language options.
+The Basic API is simpler but has fewer features, while the Advanced API offers more control but requires a Google Cloud Project ID.`,
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
+	// RunE is used instead of Run to allow error handling
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Choose between Basic and Advanced API based on the flag
+		if useAdvanced {
+			return translateAdvanced()
+		}
+		return translateBasic()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -60,7 +76,22 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	// Local flags (only available to this command)
+	rootCmd.Flags().StringVarP(&inputFile, "input", "i", "", "Input file to translate (required)")
+	rootCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for translation (required)")
+	rootCmd.Flags().StringVarP(&sourceLang, "source", "s", "auto", "Source language code (e.g., 'en' for English)")
+	rootCmd.Flags().StringVarP(&targetLang, "target", "t", "", "Target language code (e.g., 'uk' for Ukrainian) (required)")
+	rootCmd.Flags().StringVarP(&projectID, "project", "p", "", "Google Cloud Project ID (required for advanced API)")
+	rootCmd.Flags().StringVarP(&credentials, "credentials", "c", "", "Path to Google Cloud credentials JSON file")
+	rootCmd.Flags().BoolVarP(&useAdvanced, "advanced", "a", false, "Use Advanced Google Translate API")
+
+	// Mark required flags
+	// These flags must be provided or the application will show an error
+	rootCmd.MarkFlagRequired("input")
+	rootCmd.MarkFlagRequired("output")
+	rootCmd.MarkFlagRequired("target")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -81,8 +112,17 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
+	err := viper.ReadInConfig() // Find and read the config file
+	if err == nil {
+		// If a config file is found, read it in.
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	} else { // Handle errors reading the config file
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			// Config file was found but another error was produced
+			panic(fmt.Errorf("fatal error config file: %w", err))
+		}
 	}
+
 }
