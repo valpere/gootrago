@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,6 +36,26 @@ var (
 	useAdvanced bool   // Flag to switch between Basic and Advanced APIs
 )
 
+func readInp() (string, error) {
+	// Read the strInp of the input file
+	strInp, err := os.ReadFile(inputFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read input file: %v", err)
+	}
+
+	return string(strInp), nil
+}
+
+func writeOut(strOut string) error {
+	// Write the translated text to the output file
+	err := os.WriteFile(outputFile, []byte(strOut), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write output file: %v", err)
+	}
+
+	return nil
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gootrago",
@@ -48,11 +69,31 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 	// Run: func(cmd *cobra.Command, args []string) { },
 	// RunE is used instead of Run to allow error handling
 	RunE: func(cmd *cobra.Command, args []string) error {
+		strInp, err := readInp()
+		if err != nil {
+			return fmt.Errorf("failed to read input file: %v", err)
+		}
+
+		var strOut string
 		// Choose between Basic and Advanced API based on the flag
 		if useAdvanced {
-			return translateAdvanced()
+			strOut, err = translateAdvanced(strInp)
+			// fmt.Printf("Successfully translated %s to %s using Advanced API\n", inputFile, outputFile)
+		} else {
+			strOut, err = translateBasic(strInp)
+			// fmt.Printf("Successfully translated %s to %s using Basic API\n", inputFile, outputFile)
 		}
-		return translateBasic()
+
+		if err != nil {
+			return fmt.Errorf("failed to translate text: %v", err)
+		}
+
+		// Ensure the output directory exists
+		if err := os.MkdirAll(filepath.Dir(outputFile), 0755); err != nil {
+			return fmt.Errorf("failed to create output directory: %v", err)
+		}
+
+		return writeOut(strOut)
 	},
 }
 
