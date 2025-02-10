@@ -46,11 +46,19 @@ func readInp() (string, error) {
 	return string(strInp), nil
 }
 
-func writeOut(strOut string) error {
+func writeOut(strOut []string) error {
 	// Write the translated text to the output file
-	err := os.WriteFile(outputFile, []byte(strOut), 0644)
+	fh, err := os.Create(outputFile)
 	if err != nil {
-		return fmt.Errorf("failed to write output file: %v", err)
+		return fmt.Errorf("failed to create output file: %v", err)
+	}
+	defer fh.Close()
+
+	for _, str := range strOut {
+		_, err = fh.WriteString(str)
+		if err != nil {
+			return fmt.Errorf("failed to write to output file: %v", err)
+		}
 	}
 
 	return nil
@@ -74,13 +82,13 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 			return fmt.Errorf("failed to read input file: %v", err)
 		}
 
-		var strOut string
+		var strOut []string
 		// Choose between Basic and Advanced API based on the flag
 		if useAdvanced {
-			strOut, err = translateAdvanced(strInp)
+			strOut, err = translateAdvanced([]string{strInp})
 			// fmt.Printf("Successfully translated %s to %s using Advanced API\n", inputFile, outputFile)
 		} else {
-			strOut, err = translateBasic(strInp)
+			strOut, err = translateBasic([]string{strInp})
 			// fmt.Printf("Successfully translated %s to %s using Basic API\n", inputFile, outputFile)
 		}
 

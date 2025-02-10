@@ -16,7 +16,7 @@ import (
 )
 
 // translateBasic handles translation using the Basic Google Translate API
-func translateBasic(strInp string) (string, error) {
+func translateBasic(strInp []string) (strOut []string, err error) {
 	// Set up Google Cloud credentials if provided
 	if credentials != "" {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credentials)
@@ -35,21 +35,21 @@ func translateBasic(strInp string) (string, error) {
 	}
 
 	if clientErr != nil {
-		return "", fmt.Errorf("failed to create client: %v", clientErr)
+		return strOut, fmt.Errorf("failed to create client: %v", clientErr)
 	}
 	defer client.Close()
 
 	// Parse the target language code
 	targetLangTag, err := language.Parse(targetLang)
 	if err != nil {
-		return "", fmt.Errorf("invalid target language code: %v", err)
+		return strOut, fmt.Errorf("invalid target language code: %v", err)
 	}
 
 	var translations []translate.Translation
 	if sourceLang == "auto" {
 		// If source language is auto, let the API detect it
 		translations, err = client.Translate(ctx,
-			[]string{strInp},
+			strInp,
 			targetLangTag,
 			&translate.Options{
 				Format: translate.Text,
@@ -58,11 +58,11 @@ func translateBasic(strInp string) (string, error) {
 		// If source language is specified, parse and use it
 		sourceLangTag, err := language.Parse(sourceLang)
 		if err != nil {
-			return "", fmt.Errorf("invalid source language code: %v", err)
+			return strOut, fmt.Errorf("invalid source language code: %v", err)
 		}
 
 		translations, err = client.Translate(ctx,
-			[]string{strInp},
+			strInp,
 			targetLangTag,
 			&translate.Options{
 				Source: sourceLangTag,
@@ -71,19 +71,23 @@ func translateBasic(strInp string) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("failed to translate text: %v", err)
+		return strOut, fmt.Errorf("failed to translate text: %v", err)
 	}
 
 	if len(translations) == 0 {
-		return "", fmt.Errorf("no translation returned")
+		return strOut, fmt.Errorf("no translation returned")
 	}
 
-	if sourceLang == "auto" {
-		detectedLang := translations[0].Source
-		fmt.Printf("Detected source language: %s, Target language: %s\n", detectedLang, targetLang)
-	} else {
-		fmt.Printf("Source language: %s, Target language: %s\n", sourceLang, targetLang)
+	// if sourceLang == "auto" {
+	// 	detectedLang := translations[0].Source
+	// 	fmt.Printf("Detected source language: %s, Target language: %s\n", detectedLang, targetLang)
+	// } else {
+	// 	fmt.Printf("Source language: %s, Target language: %s\n", sourceLang, targetLang)
+	// }
+
+	for _, tra := range translations {
+		strOut = append(strOut, tra.Text)
 	}
 
-	return translations[0].Text, nil
+	return strOut, nil
 }

@@ -17,10 +17,10 @@ import (
 )
 
 // translateAdvanced handles translation using the Advanced Google Translate API
-func translateAdvanced(strInp string) (string, error) {
+func translateAdvanced(strInp []string) (strOut []string, err error) {
 	// Verify project ID is provided (required for Advanced API)
 	if projectID == "" {
-		return "", fmt.Errorf("project ID is required for Advanced API")
+		return strOut, fmt.Errorf("project ID is required for Advanced API")
 	}
 
 	// Set up Google Cloud credentials if provided
@@ -42,14 +42,14 @@ func translateAdvanced(strInp string) (string, error) {
 	}
 
 	if clientErr != nil {
-		return "", fmt.Errorf("failed to create client: %v", clientErr)
+		return strOut, fmt.Errorf("failed to create client: %v", clientErr)
 	}
 	defer client.Close()
 
 	// Prepare the translation request
 	req := &translatepb.TranslateTextRequest{
 		Parent:             fmt.Sprintf("projects/%s/locations/global", projectID),
-		Contents:           []string{strInp},
+		Contents:           strInp,
 		TargetLanguageCode: targetLang,
 		MimeType:           "text/plain", // Specify plain text format
 	}
@@ -62,16 +62,18 @@ func translateAdvanced(strInp string) (string, error) {
 	// Perform the translation
 	resp, err := client.TranslateText(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("failed to translate text: %v", err)
+		return strOut, fmt.Errorf("failed to translate text: %v", err)
 	}
 
 	if len(resp.GetTranslations()) == 0 {
-		return "", fmt.Errorf("no translation returned")
+		return strOut, fmt.Errorf("no translation returned")
 	}
 
-	translatedText := resp.GetTranslations()[0].GetTranslatedText()
+	for _, tra := range resp.GetTranslations() {
+		strOut = append(strOut, tra.GetTranslatedText())
+	}
 
-	fmt.Printf("Source language: %s, Target language: %s\n", resp.GetTranslations()[0].GetDetectedLanguageCode(), targetLang)
+	// fmt.Printf("Source language: %s, Target language: %s\n", resp.GetTranslations()[0].GetDetectedLanguageCode(), targetLang)
 
-	return translatedText, nil
+	return strOut, nil
 }
