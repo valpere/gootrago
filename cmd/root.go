@@ -54,7 +54,7 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 			return fmt.Errorf("failed to read input file: %v", err)
 		}
 
-		strOut, err := translateEx([]string{strInp})
+		strOut, err := translateEx([]string{strInp}, useAdvanced)
 		if err != nil {
 			return fmt.Errorf("failed to translate text: %v", err)
 		}

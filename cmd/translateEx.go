@@ -1,3 +1,13 @@
+/*
+This file provides translation functionality using both Basic and Advanced Google
+Translate APIs. The package implements a flexible translation system that can handle
+multiple input strings and switch between API versions based on requirements.
+
+The translation system is built around three main functions:
+1. translateEx - The main entry point that orchestrates the translation process
+2. translateBasic - Handles translation using the Basic Google Translate API
+3. translateAdvanced - Handles translation using the Advanced Google Translate API v3
+*/
 package cmd
 
 import (
@@ -14,9 +24,43 @@ import (
 )
 
 // **************************************************************************
-// translate handles translation using the Basic Google Translate API
+// translateEx serves as the main entry point for the translation system,
+// orchestrating the translation process by delegating to either the Basic
+// or Advanced Google Translate API based on user preference.
+//
+// This function acts as a facade, abstracting the complexity of choosing
+// and using different translation APIs behind a simple interface.
+//
+// Parameters:
+//   - strInp []string: A slice of strings to be translated. Each string
+//     in the slice will be translated individually while maintaining order.
+//   - useAdvanced bool: Determines which API version to use:
+//   - true: Uses the Advanced API (requires projectID)
+//   - false: Uses the Basic API
+//
+// Returns:
+//   - []string: A slice containing the translated strings, maintaining
+//     the same order as the input slice
+//   - error: An error if any occurred during translation, nil otherwise
+//
+// The function relies on several global variables being set:
+//   - credentials: Path to Google Cloud credentials file (optional)
+//   - projectID: Required for Advanced API
+//   - sourceLang: Source language code (or "auto" for detection)
+//   - targetLang: Target language code
+//
+// Usage example:
+//
+//	input := []string{"Hello", "World"}
+//	translated, err := translateEx(input, false)
+//	if err != nil {
+//	    log.Fatalf("Translation failed: %v", err)
+//	}
+//
+// Note: This function preserves the order of translations, ensuring that
+// each translated string corresponds to its original input string.
 // --------------------------------------------------------------------------
-func translateEx(strInp []string) (strOut []string, err error) {
+func translateEx(strInp []string, useAdvanced bool) (strOut []string, err error) {
 	// Choose between Basic and Advanced API based on the flag
 	if useAdvanced {
 		strOut, err = translateAdvanced(strInp)
@@ -33,7 +77,38 @@ func translateEx(strInp []string) (strOut []string, err error) {
 	return strOut, nil
 }
 
-// translateBasic handles translation using the Basic Google Translate API
+// **************************************************************************
+// translateBasic handles translation using the Basic Google Translate API.
+// This implementation is simpler and doesn't require a project ID, making
+// it suitable for basic translation needs.
+//
+// The function handles:
+// 1. Client initialization with optional credentials
+// 2. Language parsing and validation
+// 3. Automatic language detection when sourceLang is "auto"
+// 4. Batch translation of multiple strings
+//
+// Parameters:
+//   - strInp []string: Slice of strings to translate
+//
+// Returns:
+//   - []string: Slice of translated strings
+//   - error: Any error that occurred during translation
+//
+// The function uses several global variables:
+//   - credentials: Path to Google Cloud credentials (optional)
+//   - sourceLang: Source language code or "auto"
+//   - targetLang: Target language code
+//
+// Error cases:
+//   - Invalid credentials
+//   - Invalid language codes
+//   - API communication failures
+//   - Empty translation results
+//
+// Note: The Basic API is often sufficient for simple translation needs
+// and doesn't require project setup in Google Cloud.
+// --------------------------------------------------------------------------
 func translateBasic(strInp []string) (strOut []string, err error) {
 	// Set up Google Cloud credentials if provided
 	if credentials != "" {
@@ -111,7 +186,43 @@ func translateBasic(strInp []string) (strOut []string, err error) {
 }
 
 // **************************************************************************
-// translateAdvanced handles translation using the Advanced Google Translate API
+// translateAdvanced handles translation using the Advanced Google Translate API (v3).
+// This implementation provides additional features and control but requires
+// a Google Cloud project ID.
+//
+// The function provides:
+// 1. Advanced translation features
+// 2. Project-based authentication
+// 3. Detailed translation metadata
+// 4. Batch processing capabilities
+//
+// Parameters:
+//   - strInp []string: Slice of strings to translate
+//
+// Returns:
+//   - []string: Slice of translated strings
+//   - error: Any error that occurred during translation
+//
+// Required global variables:
+//   - projectID: Google Cloud project ID (mandatory)
+//   - credentials: Path to credentials file (optional)
+//   - sourceLang: Source language code or "auto"
+//   - targetLang: Target language code
+//
+// The Advanced API is recommended when you need:
+// - Enterprise-level translation features
+// - Detailed translation metadata
+// - Integration with other Google Cloud services
+// - Advanced monitoring and logging
+//
+// Error handling:
+// - Validates project ID presence
+// - Handles authentication errors
+// - Manages API-specific errors
+// - Validates translation results
+//
+// Note: This function requires proper Google Cloud project setup
+// and appropriate API permissions.
 // --------------------------------------------------------------------------
 func translateAdvanced(strInp []string) (strOut []string, err error) {
 	// Verify project ID is provided (required for Advanced API)
