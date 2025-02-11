@@ -36,32 +36,6 @@ var (
 	useAdvanced bool   // Flag to switch between Basic and Advanced APIs
 )
 
-func readInp() (string, error) {
-	strInp, err := os.ReadFile(inputFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read the input file: %v", err)
-	}
-
-	return string(strInp), nil
-}
-
-func writeOut(strOut []string) error {
-	fh, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create the output file: %v", err)
-	}
-	defer fh.Close()
-
-	for _, str := range strOut {
-		_, err = fh.WriteString(str)
-		if err != nil {
-			return fmt.Errorf("failed to write to the output file: %v", err)
-		}
-	}
-
-	return nil
-}
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gootrago",
