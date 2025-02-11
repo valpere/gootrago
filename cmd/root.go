@@ -37,27 +37,25 @@ var (
 )
 
 func readInp() (string, error) {
-	// Read the strInp of the input file
 	strInp, err := os.ReadFile(inputFile)
 	if err != nil {
-		return "", fmt.Errorf("failed to read input file: %v", err)
+		return "", fmt.Errorf("failed to read the input file: %v", err)
 	}
 
 	return string(strInp), nil
 }
 
 func writeOut(strOut []string) error {
-	// Write the translated text to the output file
 	fh, err := os.Create(outputFile)
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %v", err)
+		return fmt.Errorf("failed to create the output file: %v", err)
 	}
 	defer fh.Close()
 
 	for _, str := range strOut {
 		_, err = fh.WriteString(str)
 		if err != nil {
-			return fmt.Errorf("failed to write to output file: %v", err)
+			return fmt.Errorf("failed to write to the output file: %v", err)
 		}
 	}
 
@@ -82,16 +80,7 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 			return fmt.Errorf("failed to read input file: %v", err)
 		}
 
-		var strOut []string
-		// Choose between Basic and Advanced API based on the flag
-		if useAdvanced {
-			strOut, err = translateAdvanced([]string{strInp})
-			// fmt.Printf("Successfully translated %s to %s using Advanced API\n", inputFile, outputFile)
-		} else {
-			strOut, err = translateBasic([]string{strInp})
-			// fmt.Printf("Successfully translated %s to %s using Basic API\n", inputFile, outputFile)
-		}
-
+		strOut, err := translateEx([]string{strInp})
 		if err != nil {
 			return fmt.Errorf("failed to translate text: %v", err)
 		}
