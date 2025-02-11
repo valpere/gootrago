@@ -39,10 +39,8 @@ import (
 //	    log.Fatalf("Error reading input: %v", err)
 //	}
 //
-// Note: This function relies on the global variable 'inputFile' being set
-// before calling. Make sure inputFile contains a valid file path.
 // --------------------------------------------------------------------------
-func readInp() (string, error) {
+func readInp(inputFile string) (string, error) {
 	strInp, err := os.ReadFile(inputFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read the input file: %v", err)
@@ -86,11 +84,8 @@ func readInp() (string, error) {
 // 2. Each string is written exactly as provided - no automatic newlines
 // 3. The file handle is properly closed even if errors occur
 // 4. The function uses defer for safe resource cleanup
-//
-// Note: This function relies on the global variable 'outputFile' being set
-// before calling. Make sure outputFile contains a valid file path.
 // --------------------------------------------------------------------------
-func writeOut(strOut []string) error {
+func writeOut(outputFile string, strOut []string) error {
 	fh, err := os.Create(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create the output file: %v", err)
@@ -117,6 +112,14 @@ func writeOut(strOut []string) error {
 // Returns:
 //   - [][]string: slice of slices containing the CSV data
 //   - error: nil if successful, error message if failed
+//
+// Usage example:
+//
+// data, err := readCSVToSlice("input.csv", true)
+//
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 //
 // --------------------------------------------------------------------------
 func readCSVToSlice(filename string, hasHeader bool) ([][]string, error) {
@@ -153,6 +156,15 @@ func readCSVToSlice(filename string, hasHeader bool) ([][]string, error) {
 //
 // Returns:
 //   - error: nil if successful, error message if failed
+//
+// Usage example:
+//
+// header := []string{"Column1", "Column2", "Column3"}
+// err = WriteSliceToCSV("output.csv", data, header)
+//
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 //
 // --------------------------------------------------------------------------
 func writeSliceToCSV(filename string, data [][]string, header []string) error {

@@ -49,7 +49,7 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 	// Run: func(cmd *cobra.Command, args []string) { },
 	// RunE is used instead of Run to allow error handling
 	RunE: func(cmd *cobra.Command, args []string) error {
-		strInp, err := readInp()
+		strInp, err := readInp(inputFile)
 		if err != nil {
 			return fmt.Errorf("failed to read input file: %v", err)
 		}
@@ -64,7 +64,7 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 			return fmt.Errorf("failed to create output directory: %v", err)
 		}
 
-		return writeOut(strOut)
+		return writeOut(outputFile, strOut)
 	},
 }
 
