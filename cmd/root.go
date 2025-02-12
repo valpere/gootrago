@@ -26,14 +26,17 @@ import (
 
 // Global variables to store command-line flags and configuration
 var (
-	cfgFile     string // Path to configuration file
-	inputFile   string // Path to input file for translation
-	outputFile  string // Path where translated text will be saved
-	sourceLang  string // Source language code (e.g., 'en' for English)
-	targetLang  string // Target language code (e.g., 'es' for Spanish)
-	projectID   string // Google Cloud Project ID (required for Advanced API)
-	credentials string // Path to Google Cloud credentials JSON file
-	useAdvanced bool   // Flag to switch between Basic and Advanced APIs
+	cfgFile      string   // Path to configuration file
+	inputFile    string   // Path to input file for translation
+	outputFile   string   // Path where translated text will be saved
+	sourceLang   string   // Source language code (e.g., 'en' for English)
+	targetLang   string   // Target language code (e.g., 'es' for Spanish)
+	projectID    string   // Google Cloud Project ID (required for Advanced API)
+	credentials  string   // Path to Google Cloud credentials JSON file
+	useAdvanced  bool     // Flag to switch between Basic and Advanced APIs
+	csvColumn    []string // Column number to translate (for CSV files)
+	csvDelimiter string   // Delimiter for CSV files
+	csvComment   string   // Comment character for CSV files
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -91,13 +94,13 @@ func init() {
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	// Local flags (only available to this command)
-	rootCmd.Flags().StringVarP(&inputFile, "input", "i", "", "Input file to translate (required)")
-	rootCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for translation (required)")
-	rootCmd.Flags().StringVarP(&sourceLang, "source", "s", "auto", "Source language code (e.g., 'en' for English)")
-	rootCmd.Flags().StringVarP(&targetLang, "target", "t", "", "Target language code (e.g., 'uk' for Ukrainian) (required)")
-	rootCmd.Flags().StringVarP(&projectID, "project", "p", "", "Google Cloud Project ID (required for advanced API)")
-	rootCmd.Flags().StringVarP(&credentials, "credentials", "c", "", "Path to Google Cloud credentials JSON file")
-	rootCmd.Flags().BoolVarP(&useAdvanced, "advanced", "a", false, "Use Advanced Google Translate API")
+	rootCmd.PersistentFlags().StringVarP(&inputFile, "input", "i", "", "Input file to translate (required)")
+	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file for translation (required)")
+	rootCmd.PersistentFlags().StringVarP(&sourceLang, "source", "s", "auto", "Source language code (e.g., 'en' for English)")
+	rootCmd.PersistentFlags().StringVarP(&targetLang, "target", "t", "", "Target language code (e.g., 'uk' for Ukrainian) (required)")
+	rootCmd.PersistentFlags().StringVarP(&projectID, "project", "p", "", "Google Cloud Project ID (required for advanced API)")
+	rootCmd.PersistentFlags().StringVarP(&credentials, "credentials", "c", "", "Path to Google Cloud credentials JSON file")
+	rootCmd.PersistentFlags().BoolVarP(&useAdvanced, "advanced", "a", false, "Use Advanced Google Translate API")
 
 	// Mark required flags
 	// These flags must be provided or the application will show an error

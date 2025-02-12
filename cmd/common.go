@@ -103,26 +103,48 @@ func writeOut(outputFile string, strOut []string) error {
 }
 
 // **************************************************************************
-// readCSVToSlice reads a CSV file and returns a slice of string slices
-// where each inner slice represents a row from the CSV file.
+// readCSVToSlice reads a CSV file and converts its contents into a slice of string slices.
+// Each inner slice represents one row from the CSV file, with individual fields as elements.
+// The function provides flexibility in handling different CSV formats through customizable
+// delimiter and comment characters.
+//
 // Parameters:
-//   - filename: path to the CSV file
-//   - hasHeader: true if the CSV file has a header row that should be skipped
+//   - filename string: The path to the CSV file to be read
+//   - hasHeader bool: Indicates whether the first row should be treated as a header
+//     and excluded from the returned data. When true, the first row is skipped.
+//   - csvDelimiter string: The character to use as the field separator. If empty,
+//     the default comma (,) is used. Only the first character of the string is used
+//     if multiple characters are provided.
+//   - csvComment string: The character to use for marking comment lines. If empty,
+//     no comment handling is performed. Only the first character of the string is
+//     used if multiple characters are provided.
 //
 // Returns:
-//   - [][]string: slice of slices containing the CSV data
-//   - error: nil if successful, error message if failed
+//   - [][]string: A two-dimensional slice where each inner slice represents a row
+//     from the CSV file. Each element in the inner slice represents a field from
+//     that row.
+//   - error: An error if any occurred during file operations or CSV parsing.
+//     The error includes context about what operation failed.
 //
-// Usage example:
+// The function handles several scenarios:
+//  1. Missing or inaccessible files
+//  2. Malformed CSV data
+//  3. Empty files
+//  4. Files with or without headers
+//  5. Custom delimiters and comment characters
 //
-// data, err := readCSVToSlice("input.csv", true)
+// Example usage:
 //
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
+//	// Reading a standard CSV file with header
+//	data, err := readCSVToSlice("data.csv", true, "", "")
 //
+//	// Reading a tab-delimited file with comments
+//	data, err := readCSVToSlice("data.tsv", false, "\t", "#")
+//
+// Note: The function loads the entire file into memory. For very large files,
+// consider implementing a streaming approach instead.
 // --------------------------------------------------------------------------
-func readCSVToSlice(filename string, hasHeader bool) ([][]string, error) {
+func readCSVToSlice(filename string, hasHeader bool, csvDelimiter string, csvComment string) ([][]string, error) {
 	// Open the file
 	file, err := os.Open(filename)
 	if err != nil {
@@ -132,6 +154,12 @@ func readCSVToSlice(filename string, hasHeader bool) ([][]string, error) {
 
 	// Create CSV reader
 	reader := csv.NewReader(file)
+	if csvDelimiter != "" {
+		reader.Comma = rune(csvDelimiter[0])
+	}
+	if csvComment != "" {
+		reader.Comment = rune(csvComment[0])
+	}
 
 	// Read all records at once
 	records, err := reader.ReadAll()
@@ -148,26 +176,55 @@ func readCSVToSlice(filename string, hasHeader bool) ([][]string, error) {
 }
 
 // **************************************************************************
-// writeSliceToCSV writes a slice of string slices to a CSV file.
+// writeSliceToCSV writes data from a slice of string slices to a CSV file.
+// The function can optionally include a header row and use a custom delimiter.
+// It's designed to handle the inverse operation of readCSVToSlice, allowing
+// for round-trip processing of CSV data.
+//
 // Parameters:
-//   - filename: path where the CSV file should be created/overwritten
-//   - data: slice of string slices containing the data to write
-//   - header: optional header row (can be nil if no header is needed)
+//   - filename string: The path where the CSV file should be created or overwritten
+//   - data [][]string: The data to write, structured as a slice of rows, where
+//     each row is a slice of strings representing individual fields
+//   - header []string: Optional slice of strings to use as the header row.
+//     If nil, no header row is written
+//   - csvDelimiter string: The character to use as the field separator. If empty,
+//     the default comma (,) is used. Only the first character of the string is
+//     used if multiple characters are provided.
 //
 // Returns:
-//   - error: nil if successful, error message if failed
+//   - error: An error if any occurred during file creation, writing operations,
+//     or CSV encoding. The error includes context about what operation failed.
 //
-// Usage example:
+// The function handles several important aspects:
+//  1. Creates a new file or truncates an existing one
+//  2. Properly handles file closing through defer
+//  3. Manages CSV encoding with custom delimiters
+//  4. Provides clear error messages for different failure scenarios
 //
-// header := []string{"Column1", "Column2", "Column3"}
-// err = WriteSliceToCSV("output.csv", data, header)
+// Example usage:
 //
-//	if err != nil {
-//	    log.Fatal(err)
+//	// Writing a simple CSV file with header
+//	data := [][]string{
+//	    {"John", "30", "New York"},
+//	    {"Alice", "25", "Los Angeles"},
 //	}
+//	header := []string{"Name", "Age", "City"}
+//	err := writeSliceToCSV("output.csv", data, header, "")
 //
+//	// Writing a tab-delimited file without header
+//	err := writeSliceToCSV("output.tsv", data, nil, "\t")
+//
+// Important considerations:
+//  1. The function overwrites any existing file
+//  2. All rows should have the same number of fields
+//  3. The function automatically handles proper CSV encoding,
+//     including escaping special characters
+//  4. The Flush operation ensures all data is written to disk
+//
+// Note: For very large datasets, consider implementing a streaming
+// approach that writes rows incrementally.
 // --------------------------------------------------------------------------
-func writeSliceToCSV(filename string, data [][]string, header []string) error {
+func writeSliceToCSV(filename string, data [][]string, header []string, csvDelimiter string) error {
 	// Create or truncate the file
 	file, err := os.Create(filename)
 	if err != nil {
@@ -178,6 +235,10 @@ func writeSliceToCSV(filename string, data [][]string, header []string) error {
 	// Create CSV writer
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
+
+	if csvDelimiter != "" {
+		writer.Comma = rune(csvDelimiter[0])
+	}
 
 	// Write header if provided
 	if header != nil {

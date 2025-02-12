@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -24,19 +26,53 @@ import (
 // csvCmd represents the csv command
 var csvCmd = &cobra.Command{
 	Use:   "csv",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Translate CSV files or specific columns",
+	Long: `A flexible CSV translation tool that can translate entire files or specific columns while preserving the original structure. 
+Supports both Basic and Advanced Google Cloud Translation APIs and various CSV formats.`,
 	// Run: func(cmd *cobra.Command, args []string) {
 	// 	fmt.Println("csv called")
 	// },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("csv called")
-		return nil
+		fmt.Printf("#100: csvDelimiter=%v\n", csvDelimiter[0])
+		fmt.Printf("#101: csvComment=%v\n", csvComment)
+		csv, err := readCSVToSlice(inputFile, false, csvDelimiter, csvComment)
+		if err != nil {
+			return fmt.Errorf("failed to read CSV file: %v", err)
+		}
+
+		colNumbers, err := decodeColNumbers(csvColumn, len(csv[0]))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("#001: colNumbers=%v\n", colNumbers)
+		nCols := len(colNumbers)
+		for i, row := range csv {
+			if nCols == 0 {
+				strOut, err := translateEx(row, useAdvanced)
+				if err != nil {
+					return fmt.Errorf("failed to translate text: %v", err)
+				}
+				csv[i] = strOut
+			} else {
+				strInp := make([]string, 0, nCols)
+				fmt.Printf("#002a: strInp=%v; l=%d\n", strInp, len(strInp))
+				for _, v := range colNumbers {
+					strInp = append(strInp, row[v-1])
+				}
+				fmt.Printf("#002: strInp=%v; l=%d\n", strInp, len(strInp))
+				strOut, err := translateEx(strInp, useAdvanced)
+				fmt.Printf("#003: strOut=%v; l=%d\n", strOut, len(strOut))
+				if err != nil {
+					return fmt.Errorf("failed to translate text: %v", err)
+				}
+				for k, v := range strOut {
+					fmt.Printf("#010: k=%v, v=%v\n", k, v)
+					row[colNumbers[k]-1] = v
+				}
+			}
+		}
+
+		return writeSliceToCSV(outputFile, csv, nil, csvDelimiter)
 	},
 }
 
@@ -52,4 +88,49 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// csvCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	csvCmd.Flags().StringSliceVarP(&csvColumn, "column", "l", []string{}, "One or many columns number to translate (can be specified multiple times). Numeration starts from '1' or 'A'")
+	csvCmd.Flags().StringVarP(&csvDelimiter, "csv-delimiter", "", "", "Delimiter for CSV files")
+	csvCmd.Flags().StringVarP(&csvComment, "csv-comment", "", "", "Comment character for CSV files")
+}
+
+func decodeColNumbers(csvColumn []string, csvWidth int) ([]int, error) {
+	var colNumbers []int = make([]int, 0, len(csvColumn))
+	for _, col := range csvColumn {
+		col = strings.ToUpper(strings.TrimSpace(col))
+		var colNumber int
+		var err error
+		if (col[0] >= 'A') && (col[0] <= 'Z') {
+			colNumber = titleToNumber(col)
+		} else {
+			colNumber, err = strconv.Atoi(col)
+			if err != nil {
+				return nil, fmt.Errorf("invalid column number: %v", col)
+			}
+		}
+
+		if (colNumber < 1) || (colNumber > csvWidth) {
+			return nil, fmt.Errorf("column number is out of range: %v", col)
+		}
+		colNumbers = append(colNumbers, colNumber)
+	}
+
+	return colNumbers, nil
+}
+
+func titleToNumber(columnTitle string) int {
+	l := len(columnTitle)
+	if l < 1 {
+		return 0
+	}
+
+	res := 0
+	for _, c := range columnTitle {
+		if (c < 'A') || (c > 'Z') {
+			return 0
+		}
+
+		res = res*26 + int(c-'A'+1)
+	}
+
+	return res
 }
