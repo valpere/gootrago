@@ -37,6 +37,12 @@ Supports both Basic and Advanced Google Cloud Translation APIs and various CSV f
 			return fmt.Errorf("input file and output file are the same: %v", inputFile)
 		}
 
+		// Start indicator:
+		shutdownCh := make(chan struct{})
+		go indicator(shutdownCh)
+
+		defer close(shutdownCh) // Signal indicator() to terminate
+
 		csv, err := readCSVToSlice(inputFile, false, csvDelimiter, csvComment)
 		if err != nil {
 			return fmt.Errorf("failed to read CSV file: %v", err)

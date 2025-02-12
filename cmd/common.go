@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"time"
 )
 
 // **************************************************************************
@@ -253,4 +254,17 @@ func writeSliceToCSV(filename string, data [][]string, header []string, csvDelim
 	}
 
 	return nil
+}
+
+func indicator(shutdownCh <-chan struct{}) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Print(".")
+		case <-shutdownCh:
+			return
+		}
+	}
 }
