@@ -52,6 +52,10 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 	// Run: func(cmd *cobra.Command, args []string) { },
 	// RunE is used instead of Run to allow error handling
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if inputFile == outputFile {
+			return fmt.Errorf("input file and output file are the same: %v", inputFile)
+		}
+
 		strInp, err := readInp(inputFile)
 		if err != nil {
 			return fmt.Errorf("failed to read input file: %v", err)

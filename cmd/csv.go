@@ -33,8 +33,10 @@ Supports both Basic and Advanced Google Cloud Translation APIs and various CSV f
 	// 	fmt.Println("csv called")
 	// },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("#100: csvDelimiter=%v\n", csvDelimiter[0])
-		fmt.Printf("#101: csvComment=%v\n", csvComment)
+		if inputFile == outputFile {
+			return fmt.Errorf("input file and output file are the same: %v", inputFile)
+		}
+
 		csv, err := readCSVToSlice(inputFile, false, csvDelimiter, csvComment)
 		if err != nil {
 			return fmt.Errorf("failed to read CSV file: %v", err)
@@ -44,7 +46,6 @@ Supports both Basic and Advanced Google Cloud Translation APIs and various CSV f
 		if err != nil {
 			return err
 		}
-		fmt.Printf("#001: colNumbers=%v\n", colNumbers)
 		nCols := len(colNumbers)
 		for i, row := range csv {
 			if nCols == 0 {
@@ -55,18 +56,14 @@ Supports both Basic and Advanced Google Cloud Translation APIs and various CSV f
 				csv[i] = strOut
 			} else {
 				strInp := make([]string, 0, nCols)
-				fmt.Printf("#002a: strInp=%v; l=%d\n", strInp, len(strInp))
 				for _, v := range colNumbers {
 					strInp = append(strInp, row[v-1])
 				}
-				fmt.Printf("#002: strInp=%v; l=%d\n", strInp, len(strInp))
 				strOut, err := translateEx(strInp, useAdvanced)
-				fmt.Printf("#003: strOut=%v; l=%d\n", strOut, len(strOut))
 				if err != nil {
 					return fmt.Errorf("failed to translate text: %v", err)
 				}
 				for k, v := range strOut {
-					fmt.Printf("#010: k=%v, v=%v\n", k, v)
 					row[colNumbers[k]-1] = v
 				}
 			}
