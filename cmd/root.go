@@ -37,6 +37,7 @@ var (
 	csvColumn    []string // Column number to translate (for CSV files)
 	csvDelimiter string   // Delimiter for CSV files
 	csvComment   string   // Comment character for CSV files
+	version      bool     // Print version of the application
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -52,6 +53,11 @@ The Basic API is simpler but has fewer features, while the Advanced API offers m
 	// Run: func(cmd *cobra.Command, args []string) { },
 	// RunE is used instead of Run to allow error handling
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if version {
+			fmt.Println("gootrago v0.1.0")
+			return nil
+		}
+
 		if inputFile == outputFile {
 			return fmt.Errorf("input file and output file are the same: %v", inputFile)
 		}
@@ -105,6 +111,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&projectID, "project", "p", "", "Google Cloud Project ID (required for advanced API)")
 	rootCmd.PersistentFlags().StringVarP(&credentials, "credentials", "c", "", "Path to Google Cloud credentials JSON file")
 	rootCmd.PersistentFlags().BoolVarP(&useAdvanced, "advanced", "a", false, "Use Advanced Google Translate API")
+	rootCmd.Flags().BoolVarP(&version, "version", "v", false, "Print the version of the application")
 
 	// Mark required flags
 	// These flags must be provided or the application will show an error
